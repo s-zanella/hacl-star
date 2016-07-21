@@ -3,17 +3,93 @@ module Math.Axioms
 open FStar.Mul
 
 (** Necessary axioms **)
-(* Axiom: euclidian division on nats yield a smaller output than its input *)
-assume val slash_decr_axiom: a:nat -> b:pos -> Lemma (a / b <= a)
-(* Axiom: definition of the "b divides c" relation *)
-assume val slash_star_axiom: a:int -> b:pos -> c:nat -> Lemma (requires (a * b = c)) (ensures (a = c / b))
-(* Axiom: the opposite of a multiple of b is also a multiple of b and vice-versa *)
-assume val neg_of_multiple_is_multiple: a:int -> b:pos -> Lemma 
+(* Axiom: Definition of modulo operator *)
+assume val neg_modulo: a:int -> b:pos -> Lemma ((-a) % b = (b - (a % b)) % b)
+
+
+(* Lemma: Definition of euclidian division *)
+val euclidian_division_definition:  a:nat -> b:pos ->
+    Lemma (a = (a / b) * b + (a % b))
+let euclidian_division_definition a b = ()
+
+(* Lemma: Multiplication by a positive integer preserves order *)
+val multiplication_order_lemma: a:nat -> b:nat -> p:pos ->
+    Lemma (a > b <==> a * p > b * p)
+let multiplication_order_lemma a b p = ()
+
+(* Lemma: Propriety about multiplication after division *)
+val division_propriety: a:nat -> b:pos ->
+    Lemma (a - b < (a / b) * b && (a / b) * b <= a)
+let division_propriety a b = ()
+
+(* Internal lemmas for proving the definition of division *)
+private val division_definition_lemma_1: a:nat -> b:pos -> m:nat{a - b < m * b} ->
+    Lemma (m > (a / b) - 1)
+let division_definition_lemma_1 a b m = 
+  if (a / b) - 1 < 0 then () else begin
+    division_propriety a b;
+    multiplication_order_lemma m ((a / b) - 1) b
+  end
+private val division_definition_lemma_2: a:nat -> b:pos -> m:nat{m * b <= a} ->
+    Lemma (m < (a / b) + 1)
+let division_definition_lemma_2 a b m =
+  division_propriety a b;
+  multiplication_order_lemma ((a / b) + 1) m b
+
+(* Lemma: Definition of division *)
+val division_definition: a:nat -> b:pos -> m:nat{a - b < m * b && m * b <= a} ->
+    Lemma (m = a / b)
+let division_definition a b m =
+  division_definition_lemma_1 a b m;
+  division_definition_lemma_2 a b m
+  
+(* Lemma: a * b / b = a *)
+val multiple_division_lemma: a:nat -> b:pos -> Lemma ( (a * b) / b = a )
+let multiple_division_lemma a b = division_definition (a * b) b a
+
+(* Lemma: a * b % b = 0 *)
+val multiple_modulo_lemma: a:nat -> b:pos -> Lemma ( (a * b) % b = 0 )
+let multiple_modulo_lemma a b = 
+  euclidian_division_definition (a * b) b;
+  multiple_division_lemma a b
+
+(* Lemma: Division distributivity under special condition *)
+val division_addition_lemma: a:nat -> b:pos -> n:nat ->
+    Lemma ( (a + n * b) / b = (a / b) + n )
+let division_addition_lemma a b n = division_definition (a + n * b) b ((a / b) + n)
+
+(* Lemma: Modulo distributivity *)
+val modulo_addition_lemma: a:nat -> b:nat -> c:pos ->
+    Lemma ( (a + b) % c = (a % c + b % c) % c )
+let modulo_addition_lemma a b c =
+  euclidian_division_definition a c;
+  euclidian_division_definition b c;
+  division_addition_lemma (a - (a / c) * c + b - (b / c) * c) c (a / c + b / c)
+
+(** Old Necessary axioms **)
+(* Old Axiom: euclidian division on nats yield a smaller output than its input *)
+val slash_decr_axiom: a:nat -> b:pos -> Lemma (a / b <= a)
+let slash_decr_axiom a b =
+  euclidian_division_definition a b;
+  if a / b = 0 then () else multiplication_order_lemma b 1 (a / b)
+  
+(* Old Axiom: definition of the "b divides c" relation *)
+val slash_star_axiom: a:int -> b:pos -> c:nat ->
+    Lemma (requires (a * b = c)) (ensures (a = c / b))
+let slash_star_axiom a b c =
+  if a >= 0 then multiple_division_lemma a b
+  else multiple_division_lemma (-a) b
+  
+(* Old Axiom: the opposite of a multiple of b is also a multiple of b and vice-versa *)
+val neg_of_multiple_is_multiple: a:int -> b:pos -> Lemma 
   (requires (a % b = 0)) 
   (ensures ((-a) % b = 0))
-assume val neg_of_non_multiple_is_non_multiple: a:int -> b:pos -> Lemma
+let neg_of_multiple_is_multiple a b = neg_modulo a b
+val neg_of_non_multiple_is_non_multiple: a:int -> b:pos -> Lemma
     (requires (a % b <> 0))
     (ensures ((-a) % b <> 0))
+let neg_of_non_multiple_is_non_multiple a b = neg_modulo a b
+
 
 (** Usefull lemmas for future proofs **)
 val modulo_lemma_0: a:nat -> b:pos -> Lemma (requires (a < b)) (ensures (a % b = a))
