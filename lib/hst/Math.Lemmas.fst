@@ -20,13 +20,19 @@ val modulo_range_lemma: a:int -> b:pos ->
     Lemma (a % b >= 0 && a % b < b)
 let modulo_range_lemma a b = ()
 
-val small_modulo_lemma: a:nat -> b:pos ->
-    Lemma (a < b <==> a % b = a)
-let small_modulo_lemma a b = ()
+val small_modulo_lemma_1: a:nat -> b:pos ->
+    Lemma (requires a < b) (ensures a % b = a)
+let small_modulo_lemma_1 a b = ()
+val small_modulo_lemma_2: a:nat -> b:pos ->
+    Lemma (requires a % b = a) (ensures a < b)
+let small_modulo_lemma_2 a b = ()
 
-val small_division_lemma: a:nat -> b:pos ->
-    Lemma (a < b <==> a / b = 0)
-let small_division_lemma a b = ()
+val small_division_lemma_1: a:nat -> b:pos ->
+    Lemma (requires a < b) (ensures a / b = 0)
+let small_division_lemma_1 a b = ()
+val small_division_lemma_2: a:nat -> b:pos ->
+    Lemma (requires a / b = 0) (ensures a < b)
+let small_division_lemma_2 a b = ()
 
 (* Lemma: Multiplication by a positive integer preserves order *)
 val multiplication_order_lemma: a:nat -> b:nat -> p:pos ->
@@ -92,8 +98,8 @@ val division_multiplication_lemma: a:nat -> b:pos -> c:pos ->
     Lemma ( a / (b * c) = (a / b) / c )
 let division_multiplication_lemma a b c =
   if a / b <= c - 1 then begin
-    small_division_lemma (a / b) c;
-    small_division_lemma a (b * c)
+    small_division_lemma_1 (a / b) c;
+    small_division_lemma_1 a (b * c)
   end else begin
     division_propriety (a / b) c;
     multiplication_order_lemma (a / b) (((a / b) / c) * c) b;
