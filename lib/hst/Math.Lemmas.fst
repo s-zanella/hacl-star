@@ -3,6 +3,8 @@ module Math.Lemmas
 open FStar.Mul
 open Math.Axioms
 
+#set-options "--z3timeout 10"
+
 (** Lemmas about multiplication, division and modulo. **)
 (** This part focuses on the situation where          **)
 (** dividend: nat    divisor: pos                     **)
@@ -22,9 +24,13 @@ val small_modulo_lemma: a:nat -> b:pos ->
     Lemma (a < b <==> a % b = a)
 let small_modulo_lemma a b = ()
 
+val small_division_lemma: a:nat -> b:pos ->
+    Lemma (a < b <==> a / b = 0)
+let small_division_lemma a b = ()
+
 (* Lemma: Multiplication by a positive integer preserves order *)
 val multiplication_order_lemma: a:nat -> b:nat -> p:pos ->
-    Lemma (a > b <==> a * p > b * p)
+    Lemma (a >= b <==> a * p >= b * p)
 let multiplication_order_lemma a b p = ()
 
 (* Lemma: Propriety about multiplication after division *)
@@ -59,24 +65,63 @@ let multiple_division_lemma a b = division_definition (a * b) b a
 
 (* Lemma: (a * b) % b = 0 *)
 val multiple_modulo_lemma: a:nat -> b:pos -> Lemma ( (a * b) % b = 0 )
-let multiple_modulo_lemma a b = 
-  euclidian_division_definition (a * b) b;
-  multiple_division_lemma a b
+let multiple_modulo_lemma a b = multiple_division_lemma a b
 
 (* Lemma: Division distributivity under special condition *)
 val division_addition_lemma: a:nat -> b:pos -> n:nat ->
     Lemma ( (a + n * b) / b = (a / b) + n )
 let division_addition_lemma a b n = division_definition (a + n * b) b ((a / b) + n)
 
-(* This one might need a higher z3timeout limit *)
 (* Lemma: Modulo distributivity *)
-val modulo_addition_lemma: a:nat -> b:nat -> c:pos ->
+val modulo_distributivity: a:nat -> b:nat -> c:pos ->
     Lemma ( (a + b) % c = (a % c + b % c) % c )
-let modulo_addition_lemma a b c =
+let modulo_distributivity a b c =
   euclidian_division_definition a c;
   euclidian_division_definition b c;
   division_addition_lemma (a - (a / c) * c + b - (b / c) * c) c (a / c + b / c)
 
+(* Lemma: Modulo distributivity under special condition *)
+val modulo_addition_lemma: a:nat -> b:pos -> n:nat ->
+    Lemma ( (a + n * b) % b = a % b )
+let modulo_addition_lemma a b n =
+  modulo_distributivity a (n * b) b;
+  multiple_modulo_lemma n b
+
+(* Lemma: Divided by a product is equivalent to being divided one by one *)
+val division_multiplication_lemma: a:nat -> b:pos -> c:pos ->
+    Lemma ( a / (b * c) = (a / b) / c )
+let division_multiplication_lemma a b c =
+  if a / b <= c - 1 then begin
+    small_division_lemma (a / b) c;
+    small_division_lemma a (b * c)
+  end else begin
+    division_propriety (a / b) c;
+    multiplication_order_lemma (a / b) (((a / b) / c) * c) b;
+    multiplication_order_lemma (((a / b) / c) * c) ((a / b) - c) b;
+    cut( ((a / b) - c + 1) * b <= ((a / b) / c) * c * b );
+    cut( ((a / b) / c) * c * b <= (a / b) * b );
+    division_definition a (b * c) ((a / b) / c)
+  end
+
+(* Lemma: Propriety about modulo and division *)
+val modulo_division_lemma: a:nat -> b:pos -> c:pos ->
+    Lemma ( (a % (b * c)) / b = (a / b) % c )
+let modulo_division_lemma a b c =
+  division_addition_lemma (a - (a / (b * c)) * (b * c)) b ((a / (b * c)) * c);
+  assert( (a - (a / (b * c)) * (b * c)) / b = (a - (a / (b * c)) * (b * c) + ((a / (b * c)) * c) * b) / b - ((a / (b * c)) * c));
+  cut( (a - (a / (b * c)) * (b * c)) / b = a / b - ((a / (b * c)) * c));
+  euclidian_division_definition a (b * c);
+  division_multiplication_lemma a b c;
+  euclidian_division_definition (a / b) c
+
+val modulo_modulo_lemma: a:nat -> b:pos -> c:pos ->
+    Lemma ( (a % (b * c)) % b = a % b )
+let modulo_modulo_lemma a b c =
+  modulo_addition_lemma (a - (a / (b * c)) * (b * c)) b ((a / (b * c)) * c);
+  assert( ((a - (a / (b * c)) * (b * c)) + ((a / (b * c)) * c) * b) % b = (a - (a / (b * c)) * (b * c)) % b );
+  cut( a % b = (a - (a / (b * c)) * (b * c)) % b );
+  euclidian_division_definition a (b * c)
+  
 
 (** Old lemmas **)
 (* Lemma: mutiplying by a positive number yield a greater output than input *)
@@ -238,7 +283,7 @@ let pos_times_pos_is_pos a b = ()
 val nat_over_pos_is_nat: a:nat -> b:pos -> Lemma (a / b >= 0)
 let nat_over_pos_is_nat a b = ()
 
-(* Old Axiom: the opposite of a multiple of b is also a multiple of b and vice-versa *)
+(* Lemma: the opposite of a multiple of b is also a multiple of b and vice-versa *)
 val neg_of_multiple_is_multiple: a:int -> b:pos -> Lemma 
   (requires (a % b = 0)) 
   (ensures ((-a) % b = 0))
