@@ -143,29 +143,29 @@ let lte #n (a:uint_t n) (b:uint_t n) : Tot bool = (a <= b)
 
 (** This is not a complete bitvector type, there exist only several basic    **)
 (** functions which are used to prove the assumed lemmas.                    **)
-(** (nth_v a i) returns a 1-bit integer indicating the i-th bit of a.        **)
+(** (nth' a i) returns a 1-bit integer indicating the i-th bit of a.        **)
 (** (nth a i) returns a boolean indicating the i-th bit of a.                **)
 (** (rest a i) returns a (n-1)-bit integer made of the last (n-1) bits of a. **)
 (** A complete bitvector type should contain more functions like "sub",      **)
 (** whose proof will be similar with the one of "rest" but more complicated. **)
-let nth_v #n (a:uint_t n) (i:nat{i < n}) : Tot (uint_t 1) = (a / pow2 i) % pow2 1
-let nth #n (a:uint_t n) (i:nat{i < n}) : Tot bool = (nth_v #n a i = 1)
-let rest (#n:pos) (a:uint_t n) : Tot (uint_t (n - 1)) = a % pow2 (n - 1)
+private let nth' #n (a:uint_t n) (i:int) : Tot (uint_t 1) = 
+  if i < 0 then 0 else (a / pow2 i) % pow2 1
+private let rest (#n:pos) (a:uint_t n) : Tot (uint_t (n - 1)) = a % pow2 (n - 1)
 
-#set-options "--z3timeout 10 --max_fuel 1"
+let nth #n (a:uint_t n) (i:nat{i < n}) : Tot bool = (nth' #n a i = 1)
 
 private val rest_lemma_aux: #n:pos -> a:uint_t n -> i:nat{i < n - 1} ->
   Lemma (requires True)
-        (ensures (nth_v (rest a) i = nth_v a i))
+        (ensures (nth' (rest a) i = nth' a i))
         [SMTPat (nth (rest a) i)]
 let rest_lemma_aux #n a i = 
   modulo_division_lemma a (pow2 i) (pow2 (n - i - 1));
   pow2_exp_1 i (n - i - 1);
+  nat_over_pos_is_nat a (pow2 i);
   modulo_modulo_lemma (a / pow2 i) (pow2 1) (pow2 (n - i - 2));
-  pow2_exp_1 1 (n - i - 2);
-  cut(((a % pow2 (n - 1)) / pow2 i) % pow2 1 = (a / pow2 i) % pow2 1)
+  pow2_exp_1 1 (n - i - 2)
 
-val rest_lemma: #n:pos -> a:uint_t n ->
+private val rest_lemma: #n:pos -> a:uint_t n ->
   Lemma (forall i. nth (rest a) i = nth a i)
 let rest_lemma #n a = ()
 
@@ -173,6 +173,7 @@ private val rest_value_lemma_1: #n:pos -> a:uint_t n ->
   Lemma (requires (nth a (n - 1)))
 	(ensures (a = pow2 (n - 1) + rest a))
 let rest_value_lemma_1 #n a = 
+  nat_over_pos_is_nat a (pow2 (n - 1));
   small_modulo_lemma_1 (a / pow2 (n - 1)) (pow2 1);
   euclidian_division_definition a (pow2 (n - 1))
 
@@ -180,8 +181,8 @@ private val rest_value_lemma_2: #n:pos -> a:uint_t n ->
   Lemma (requires (not (nth a (n - 1))))
 	(ensures (a = rest a))
 let rest_value_lemma_2 #n a = 
+  nat_over_pos_is_nat a (pow2 (n - 1));
   small_modulo_lemma_1 (a / pow2 (n - 1)) (pow2 1);
-  assert(a / pow2 (n - 1) = 0);
   euclidian_division_definition a (pow2 (n - 1))
 
 val nth_lemma: #n:nat -> a:uint_t n -> b:uint_t n ->
@@ -318,12 +319,91 @@ val to_uint_t: m:pos -> a:int -> Tot (uint_t m)
 let to_uint_t m a = a % pow2 m
 
 (* Shift operators *)
-assume val shift_right: #n:pos -> a:uint_t n -> s:nat -> Pure (uint_t n)
-  (requires True)
-  (ensures (fun b -> b = a / (pow2 s)))
+val shift_right: #n:pos -> a:uint_t n -> s:nat -> Tot (uint_t n)
+let shift_right #n a s = 
+  slash_decr_axiom a (pow2 s);
+  nat_over_pos_is_nat a (pow2 s);
+  a / (pow2 s)
 
 val shift_left: #n:pos -> a:uint_t n -> s:nat -> Tot (uint_t n)
 let shift_left #n a s = (a * (pow2 s)) % pow2 n
+
+private val shift_right_lemma_aux: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n} ->
+  Lemma (nth' (shift_right #n a s) i = (a / pow2 (s + i)) % pow2 1)
+let shift_right_lemma_aux #n a s i =
+  division_multiplication_lemma a (pow2 s) (pow2 i);
+  pow2_exp_1 s i
+
+val shift_right_lemma_1: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i >= n - s} ->
+  Lemma (requires True)
+	(ensures (nth (shift_right #n a s) i = false))
+	[SMTPat (nth (shift_right #n a s) i)]
+let shift_right_lemma_1 #n a s i =
+  shift_right_lemma_aux #n a s i;
+  pow2_increases_2 (s + i) n;
+  small_division_lemma_1 a (pow2 (s + i))
+
+val shift_right_lemma_2: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i < n - s} ->
+  Lemma (requires True)
+        (ensures (nth (shift_right #n a s) i = nth #n a (i + s)))
+	[SMTPat (nth (shift_right #n a s) i)]
+let shift_right_lemma_2 #n a s i =
+  shift_right_lemma_aux #n a s i
+
+private val shift_left_lemma_aux_0: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n} ->
+  Lemma (nth' (shift_left #n a s) i = ((a * pow2 s) / pow2 i) % pow2 1)
+let shift_left_lemma_aux_0 #n a s i =
+  modulo_division_lemma (a * pow2 s) (pow2 i) (pow2 (n - i));
+  pow2_exp_1 i (n - i);
+  nat_over_pos_is_nat (a * pow2 s) (pow2 i);
+  modulo_modulo_lemma ((a * pow2 s) / pow2 i) (pow2 1) (pow2 (n - i - 1));
+  pow2_exp_1 1 (n - i - 1)
+
+private val shift_left_lemma_aux_1: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i < s} ->
+  Lemma (((a * pow2 s) / pow2 i) % pow2 1 = 0)
+let shift_left_lemma_aux_1 #n a s i = 
+  pow2_exp_1 (s - i) i;
+  commutativity_mul a (pow2 (s - i)) (pow2 i);
+  multiple_division_lemma (a * pow2 (s - i)) (pow2 i);
+  assert(((a * pow2 s) / pow2 i) % pow2 1 = (a * pow2 (s - i)) % pow2 1);
+  pow2_exp_1 (s - i - 1) 1;
+  commutativity_mul a (pow2 (s - i - 1)) (pow2 1);
+  multiple_modulo_lemma (a * pow2 (s - i - 1)) (pow2 1);
+  assert(((a * pow2 s) / pow2 i) % pow2 1 = 0)
+  
+private val shift_left_lemma_aux_2: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i >= s} ->
+  Lemma ((a * pow2 s) / pow2 i = a / pow2 (i - s))
+let shift_left_lemma_aux_2 #n a s i =
+  pow2_exp_1 s (i - s);
+  division_multiplication_lemma (a * pow2 s) (pow2 s) (pow2 (i - s));
+  multiple_division_lemma a (pow2 s)
+	
+val shift_left_lemma_1: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i < s} ->
+  Lemma (requires True)
+	(ensures (nth (shift_left #n a s) i = false))
+	[SMTPat (nth (shift_left #n a s) i)]
+let shift_left_lemma_1 #n a s i =
+  shift_left_lemma_aux_0 #n a s i;
+  shift_left_lemma_aux_1 #n a s i
+
+val shift_left_lemma_2: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i >= s} ->
+  Lemma (requires True)
+        (ensures (nth (shift_left #n a s) i = nth #n a (i - s)))
+	[SMTPat (nth (shift_left #n a s) i)]
+let shift_left_lemma_2 #n a s i =
+  shift_left_lemma_aux_0 #n a s i;
+  shift_left_lemma_aux_2 #n a s i
+
+val shift_right_logxor_lemma: #n:pos -> a:uint_t n -> b:uint_t n -> s:nat ->
+  Lemma (requires True)
+        (ensures (shift_right #n (logxor #n a b) s = logxor #n (shift_right #n a s) (shift_right #n b s)))
+let shift_right_logxor_lemma #n a b s = nth_lemma (shift_right #n (logxor #n a b) s) (logxor #n (shift_right #n a s) (shift_right #n b s))
+
+val shift_left_logxor_lemma: #n:pos -> a:uint_t n -> b:uint_t n -> s:nat ->
+  Lemma (requires True)
+        (ensures (shift_left #n (logxor #n a b) s = logxor #n (shift_left #n a s) (shift_left #n b s)))
+let shift_left_logxor_lemma #n a b s = nth_lemma (shift_left #n (logxor #n a b) s) (logxor #n (shift_left #n a s) (shift_left #n b s))
+
 
 (* val lemma_pow2_values: n:nat -> Lemma *)
 (*   (requires (n <= 64)) *)
