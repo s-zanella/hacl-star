@@ -4,13 +4,13 @@ open FStar.Mul
 open Math.Axioms
 
 (* Old Lemmas *)
-(* Lemma: definition of the euclidian division for nats *)
-val euclidian_div_axiom:
+(* Lemma: definition of the euclidean division for nats *)
+val euclidean_div_axiom:
   a:nat -> b:pos ->
   Lemma
     (requires (True))
     (ensures ( a - b * (a / b) >= 0 /\ a - b * (a / b) < b ))
-let euclidian_div_axiom a b = ()
+let euclidean_div_axiom a b = ()
 
 (* Lemma: multiplication is right distributive over addition *)
 val distributivity_add_left:
@@ -184,14 +184,14 @@ val mul_incr : a:nat -> b:nat -> c:nat ->
 		       (ensures ( a * b <= a * c /\ b * a <= c * a))
 let mul_incr a b c = ()
 
-(* Lemma : loss of precision in euclidian division *)
+(* Lemma : loss of precision in euclidean division *)
 val multiply_fractions:
   a:nat -> n:pos ->
   Lemma
     (requires (True))
     (ensures ( n * ( a / n ) <= a ))
 let multiply_fractions a n =
-  (euclidian_div_axiom a n)
+  (euclidean_div_axiom a n)
 
 (* Lemma : distributivity of minus over parenthesized sum *)
 val paren_sub: a:int -> b:int -> c:int -> Lemma ((a - (b + c) = a - b - c /\ a - (b - c) = a - b + c))
@@ -211,10 +211,10 @@ let nat_plus_nat_is_nat n m = ()
 (** dividend: nat    divisor: pos                     **)
 (** TODO: add triggers for certain lemmas.            **)
 
-(* Lemma: Definition of euclidian division *)
-val euclidian_division_definition: a:nat -> b:pos ->
+(* Lemma: Definition of euclidean division *)
+val euclidean_division_definition: a:nat -> b:pos ->
     Lemma (a = (a / b) * b + a % b)
-let euclidian_division_definition a b = ()
+let euclidean_division_definition a b = ()
 
 (* Lemma: Propriety about modulo *)
 val modulo_range_lemma: a:int -> b:pos ->
@@ -283,9 +283,9 @@ let division_addition_lemma a b n = division_definition (a + n * b) b (a / b + n
 val modulo_distributivity: a:nat -> b:nat -> c:pos ->
     Lemma ( (a + b) % c = (a % c + b % c) % c )
 let modulo_distributivity a b c =
-  euclidian_division_definition a c;
-  euclidian_division_definition b c;
-  euclidian_division_definition (a % c + b % c) c;
+  euclidean_division_definition a c;
+  euclidean_division_definition b c;
+  euclidean_division_definition (a % c + b % c) c;
   nat_over_pos_is_nat a c;
   nat_over_pos_is_nat b c;
   division_addition_lemma (a - (a / c) * c + b - (b / c) * c) c (a / c + b / c)
@@ -323,9 +323,9 @@ let modulo_division_lemma a b c =
   distributivity_sub_left a (a / (b * c)) (b * c);
   commutativity_mul (a / (b * c)) c b;
   cut( (a - (a / (b * c)) * (b * c)) / b = a / b - ((a / (b * c)) * c));
-  euclidian_division_definition a (b * c);
+  euclidean_division_definition a (b * c);
   division_multiplication_lemma a b c;
-  euclidian_division_definition (a / b) c
+  euclidean_division_definition (a / b) c
 
 val modulo_modulo_lemma: a:nat -> b:pos -> c:pos ->
     Lemma ( (a % (b * c)) % b = a % b )
@@ -333,16 +333,16 @@ let modulo_modulo_lemma a b c =
   modulo_addition_lemma (a - (a / (b * c)) * (b * c)) b ((a / (b * c)) * c);
   assert( ((a - (a / (b * c)) * (b * c)) + ((a / (b * c)) * c) * b) % b = (a - (a / (b * c)) * (b * c)) % b );
   cut( a % b = (a - (a / (b * c)) * (b * c)) % b );
-  euclidian_division_definition a (b * c)
+  euclidean_division_definition a (b * c)
 
 (* Lemma: mutiplying by a positive number yield a greater output than input *)
 val star_incr_axiom: a:nat -> b:pos -> Lemma (a * b >= a)
 let star_incr_axiom a b = if a = 0 then () else multiplication_order_lemma b 1 a
 
-(* Lemma: euclidian division on nats yield a smaller output than its input *)
+(* Lemma: euclidean division on nats yield a smaller output than its input *)
 val slash_decr_axiom: a:nat -> b:pos -> Lemma (a / b <= a)
 let slash_decr_axiom a b =
-  euclidian_division_definition a b;
+  euclidean_division_definition a b;
   if a / b = 0 then () else multiplication_order_lemma b 1 (a / b)
   
 (* Lemma: definition of the "b divides c" relation *)

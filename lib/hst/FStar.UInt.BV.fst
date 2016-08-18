@@ -19,12 +19,14 @@ let size (x:int) (n:nat) : Tot Type0 = b2t(fits x n)
 type uint_t (n:nat) = x:int{size x n}
 
 (* Constants *)
-val zero: n:pos -> Tot (uint_t n)
-let zero n = 0
-val one: n:pos -> Tot (uint_t n)
-let one n = 1
-val ones: n:pos -> Tot (uint_t n)
-let ones n = max_int n
+val zero: #n:pos -> Tot (uint_t n)
+let zero #n = 0
+val pow2_n: #n:pos -> p:nat{p < n} -> Tot (uint_t n)
+let pow2_n #n p = pow2_increases_2 (n - 1) p; pow2 p
+val one: #n:pos -> Tot (uint_t n)
+let one #n = pow2_n #n 0
+val ones: #n:pos -> Tot (uint_t n)
+let ones #n = max_int n
 
 (* Increment and decrement *)
 val incr: #n:pos -> a:uint_t n -> Pure (uint_t n)

@@ -19,12 +19,12 @@ let size (x:int) (n:nat) : Tot Type0 = b2t(fits x n)
 type uint_t (n:nat) = x:int{size x n}
 
 (* Constants *)
-val zero: n:pos -> Tot (uint_t n)
-let zero n = 0
-val one: n:pos -> Tot (uint_t n)
-let one n = 1
-val ones: n:pos -> Tot (uint_t n)
-let ones n = max_int n
+val zero: #n:pos -> Tot (uint_t n)
+let zero #n = 0
+val one: #n:pos -> Tot (uint_t n)
+let one #n = 1
+val ones: #n:pos -> Tot (uint_t n)
+let ones #n = max_int n
 
 (* Increment and decrement *)
 val incr: #n:pos -> a:uint_t n -> Pure (uint_t n)
@@ -175,7 +175,7 @@ private val rest_value_lemma_1: #n:pos -> a:uint_t n ->
 let rest_value_lemma_1 #n a = 
   nat_over_pos_is_nat a (pow2 (n - 1));
   small_modulo_lemma_1 (a / pow2 (n - 1)) (pow2 1);
-  euclidian_division_definition a (pow2 (n - 1))
+  euclidean_division_definition a (pow2 (n - 1))
 
 private val rest_value_lemma_2: #n:pos -> a:uint_t n ->
   Lemma (requires (not (nth a (n - 1))))
@@ -183,7 +183,7 @@ private val rest_value_lemma_2: #n:pos -> a:uint_t n ->
 let rest_value_lemma_2 #n a = 
   nat_over_pos_is_nat a (pow2 (n - 1));
   small_modulo_lemma_1 (a / pow2 (n - 1)) (pow2 1);
-  euclidian_division_definition a (pow2 (n - 1))
+  euclidean_division_definition a (pow2 (n - 1))
 
 val nth_lemma: #n:nat -> a:uint_t n -> b:uint_t n ->
   Lemma (requires forall i. nth a i = nth b i) (ensures a = b)
@@ -202,20 +202,20 @@ let rec nth_lemma #n a b =
 
 (* Lemmas for constants *)
 val zero_nth_lemma: #n:pos -> i:nat{i < n} ->
-  Lemma (requires True) (ensures (nth (zero n) i = false))
-        [SMTPat (nth (zero n) i)]
+  Lemma (requires True) (ensures (nth (zero #n) i = false))
+        [SMTPat (nth (zero #n) i)]
 let zero_nth_lemma #n i = ()
 
 val one_nth_lemma: #n:pos -> i:nat{i < n} ->
   Lemma (requires True)
-        (ensures (i = 0 ==> nth (one n) i = true) /\
-	         (i > 0 ==> nth (one n) i = false))
-        [SMTPat (nth (one n) i)]
+        (ensures (i = 0 ==> nth (one #n) i = true) /\
+	         (i > 0 ==> nth (one #n) i = false))
+        [SMTPat (nth (one #n) i)]
 let one_nth_lemma #n i = ()
 
 val ones_nth_lemma: #n:pos -> i:nat{i < n} ->
-  Lemma (requires True) (ensures (nth (ones n) i) = true)
-        [SMTPat (nth (ones n) i)]
+  Lemma (requires True) (ensures (nth (ones #n) i) = true)
+        [SMTPat (nth (ones #n) i)]
 let ones_nth_lemma #n i =
   pow2_exp_1 i (n - i);
   division_definition (pow2 n - 1) (pow2 i) (pow2 (n - i) - 1)
@@ -255,12 +255,12 @@ val logand_self: #n:pos -> a:uint_t n ->
 let logand_self #n a = nth_lemma #n (logand #n a a) a
 
 val logand_lemma_1: #n:pos -> a:uint_t n -> 
-  Lemma (requires True) (ensures (logand #n a (zero n) = zero n))
-let logand_lemma_1 #n a = nth_lemma #n (logand #n a (zero n)) (zero n)
+  Lemma (requires True) (ensures (logand #n a (zero #n) = zero #n))
+let logand_lemma_1 #n a = nth_lemma #n (logand #n a (zero #n)) (zero #n)
 
 val logand_lemma_2: #n:pos -> a:uint_t n -> 
-  Lemma (requires True) (ensures (logand #n a (ones n) = a))
-let logand_lemma_2 #n a = nth_lemma #n (logand #n a (ones n)) a
+  Lemma (requires True) (ensures (logand #n a (ones #n) = a))
+let logand_lemma_2 #n a = nth_lemma #n (logand #n a (ones #n)) a
 
 (* Bitwise XOR operator *)
 val logxor_commutative: #n:pos -> a:uint_t n -> b:uint_t n ->
@@ -272,16 +272,16 @@ val logxor_associative: #n:pos -> a:uint_t n -> b:uint_t n -> c:uint_t n ->
 let logxor_associative #n a b c = nth_lemma #n (logxor #n (logxor #n a b) c) (logxor #n a (logxor #n b c))
 
 val logxor_self: #n:pos -> a:uint_t n ->
-  Lemma (requires True) (ensures (logxor #n a a = zero n))
-let logxor_self #n a = nth_lemma #n (logxor #n a a) (zero n)
+  Lemma (requires True) (ensures (logxor #n a a = zero #n))
+let logxor_self #n a = nth_lemma #n (logxor #n a a) (zero #n)
 
 val logxor_lemma_1: #n:pos -> a:uint_t n -> 
-  Lemma (requires True) (ensures (logxor #n a (zero n) = a))
-let logxor_lemma_1 #n a = nth_lemma #n (logxor #n a (zero n)) a
+  Lemma (requires True) (ensures (logxor #n a (zero #n) = a))
+let logxor_lemma_1 #n a = nth_lemma #n (logxor #n a (zero #n)) a
 
 val logxor_lemma_2: #n:pos -> a:uint_t n -> 
-  Lemma (requires True) (ensures (logxor #n a (ones n) = lognot #n a))
-let logxor_lemma_2 #n a = nth_lemma #n (logxor #n a (ones n)) (lognot #n a)
+  Lemma (requires True) (ensures (logxor #n a (ones #n) = lognot #n a))
+let logxor_lemma_2 #n a = nth_lemma #n (logxor #n a (ones #n)) (lognot #n a)
 
 (* Bitwise OR operators *)
 val logor_commutative: #n:pos -> a:uint_t n -> b:uint_t n ->
@@ -298,12 +298,12 @@ val logor_self: #n:pos -> a:uint_t n ->
 let logor_self #n a = nth_lemma #n (logor #n a a) a
 
 val logor_lemma_1: #n:pos -> a:uint_t n ->
-  Lemma (requires True) (ensures (logor #n a (zero n) = a))
-let logor_lemma_1 #n a = nth_lemma (logor #n a (zero n)) a
+  Lemma (requires True) (ensures (logor #n a (zero #n) = a))
+let logor_lemma_1 #n a = nth_lemma (logor #n a (zero #n)) a
 
 val logor_lemma_2: #n:pos -> a:uint_t n -> 
-  Lemma (requires True) (ensures (logor #n a (ones n) = ones n))
-let logor_lemma_2 #n a = nth_lemma (logor #n a (ones n)) (ones n)
+  Lemma (requires True) (ensures (logor #n a (ones #n) = ones #n))
+let logor_lemma_2 #n a = nth_lemma (logor #n a (ones #n)) (ones #n)
 
 (* Bitwise NOT operator *)
 val lognot_self: #n:pos -> a:uint_t n ->
@@ -311,8 +311,8 @@ val lognot_self: #n:pos -> a:uint_t n ->
 let lognot_self #n a = nth_lemma (lognot #n (lognot #n a)) a
 
 val lognot_lemma_1: #n:pos -> 
-  Lemma (requires True) (ensures (lognot #n (zero n) = ones n))
-let lognot_lemma_1 #n = nth_lemma (lognot #n (zero n)) (ones n)
+  Lemma (requires True) (ensures (lognot #n (zero #n) = ones #n))
+let lognot_lemma_1 #n = nth_lemma (lognot #n (zero #n)) (ones #n)
 
 (* Casts *)
 val to_uint_t: m:pos -> a:int -> Tot (uint_t m)
