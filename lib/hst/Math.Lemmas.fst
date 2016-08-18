@@ -101,6 +101,14 @@ val swap_mul:
  (ensures ( a * b = b * a ))
 let swap_mul a b = ()
 
+(* Lemma: anything multiplied by zero is zero *)
+val zero_mul:
+  a:int ->
+  Lemma
+    (requires (True))
+    (ensures (0 * a = 0 /\ a * 0 = 0))
+let zero_mul a = ()
+
 (* Lemma: minus applies to the whole term *)
 val neg_mul_left:
   a:int -> b:int ->
@@ -144,6 +152,9 @@ val mul_ineq1:
     (requires ( a < b /\ a > -b /\ c < d /\ c > -d))
     (ensures (a * c < b * d /\ a * c > - (b * d)))
 let mul_ineq1 a b c d = ()
+
+val pos_is_nat: a:pos -> Lemma (a >= 0)
+let pos_is_nat a = ()
 
 val nat_times_nat_is_nat:
   a:nat -> b:nat -> 
@@ -426,3 +437,59 @@ val pow2_exp_2: n:nat -> m:nat{m <= n} ->
 let pow2_exp_2 n m =
   pow2_exp_1 m (n - m);
   multiple_division_lemma (pow2 (n - m)) (pow2 m)
+
+val pow2_multiplication_division_lemma_1: a:nat -> b:nat -> c:nat{c >= b} ->
+    Lemma ( (a * pow2 c) / pow2 b = a * pow2 (c - b))
+let pow2_multiplication_division_lemma_1 a b c =
+  pow2_exp_1 (c - b) b;
+  commutativity_mul a (pow2 (c - b)) (pow2 b);
+  multiple_division_lemma (a * pow2 (c - b)) (pow2 b)
+
+val pow2_multiplication_division_lemma_2: a:nat -> b:nat -> c:nat{c <= b} ->
+    Lemma ( (a * pow2 c) / pow2 b = a / pow2 (b - c))
+let pow2_multiplication_division_lemma_2 a b c =
+  pow2_exp_1 c (b - c);
+  division_multiplication_lemma (a * pow2 c) (pow2 c) (pow2 (b - c));
+  multiple_division_lemma a (pow2 c)
+
+val pow2_multiplication_modulo_lemma_1: a:nat -> b:nat -> c:nat{c >= b} ->
+    Lemma ( (a * pow2 c) % pow2 b = 0 )
+let pow2_multiplication_modulo_lemma_1 a b c =
+  pow2_exp_1 (c - b) b;
+  commutativity_mul a (pow2 (c - b)) (pow2 b);
+  multiple_modulo_lemma (a * pow2 (c - b)) (pow2 b)
+
+val pow2_multiplication_modulo_lemma_2: a:nat -> b:nat -> c:nat{c <= b} ->
+    Lemma ( (a * pow2 c) % pow2 b = (a % pow2 (b - c)) * pow2 c )
+let pow2_multiplication_modulo_lemma_2 a b c =
+  euclidean_division_definition a (pow2 (b - c));
+  pow2_exp_1 (b - c) c;
+  commutativity_mul (a / pow2 (b - c)) (pow2 (b - c)) (pow2 c);
+  nat_over_pos_is_nat a (pow2 (b - c));
+  modulo_addition_lemma ((a % pow2 (b - c)) * pow2 c) (pow2 b) (a / pow2 (b - c));
+  multiplication_order_lemma (pow2 (b - c)) (a % pow2 (b - c)) (pow2 c);
+  small_modulo_lemma_1 ((a % pow2 (b - c)) * pow2 c) (pow2 b)
+
+val pow2_modulo_division_lemma_1: a:nat -> b:nat -> c:nat{c >= b} ->
+    Lemma ( (a % pow2 c) / pow2 b = (a / pow2 b) % (pow2 (c - b)) )
+let pow2_modulo_division_lemma_1 a b c =
+  pow2_exp_1 (c - b) b;
+  modulo_division_lemma a (pow2 b) (pow2 (c - b))
+
+val pow2_modulo_division_lemma_2: a:nat -> b:nat -> c:nat{c <= b} ->
+    Lemma ( (a % pow2 c) / pow2 b = 0 )
+let pow2_modulo_division_lemma_2 a b c =
+  pow2_increases_2 b c;
+  small_division_lemma_1 (a % pow2 c) (pow2 b)
+
+val pow2_modulo_modulo_lemma_1: a:nat -> b:nat -> c:nat{c >= b} ->
+    Lemma ( (a % pow2 c) % pow2 b = a % pow2 b )
+let pow2_modulo_modulo_lemma_1 a b c =
+  pow2_exp_1 (c - b) b;
+  modulo_modulo_lemma a (pow2 b) (pow2 (c - b))
+
+val pow2_modulo_modulo_lemma_2: a:nat -> b:nat -> c:nat{c <= b} ->
+    Lemma ( (a % pow2 c) % pow2 b = a % pow2 c )
+let pow2_modulo_modulo_lemma_2 a b c =
+  pow2_increases_2 b c;
+  small_modulo_lemma_1 (a % pow2 c) (pow2 b)
