@@ -34,7 +34,7 @@ let contains = contains
 let sel = sel
 let max_length = max_length
 let length = length
-let length' = length'
+(* let length' = length' *)
 let idx  = idx
 let content = content
 let as_ref = as_ref
@@ -44,7 +44,7 @@ let frameOf = frameOf
 (* Liveness condition, necessary for any computation on the buffer *)
 let live = live
 
-let getValue = getValue
+(* let getValue = getValue *)
 let get = get
 let as_seq = as_seq
 let equal = equal
@@ -68,5 +68,6 @@ let index #t b i = index #t b i
 let upd #t b i v = upd #t b i v
 let sub #t b x y = sub #t b x y
 let offset #t b i = offset #t b i
-let blit #a = blit #a
+
+let blit (#t:Type) (a:buffer t) aidx (b:buffer t) bidx len = blit a aidx b bidx len
 let fill #a = fill #a

@@ -16,7 +16,7 @@ OPTIONS_OCAML=--lax --codegen OCaml --no_location_info
 OCAMLOPT := $(OCAMLOPT) -I $(ULIB_ML)/native_int -w -20-26
 
 REALIZED_MLI_HST=Hacl_UInt8 Hacl_UInt32 Hacl_UInt64 Hacl_UInt128
-REALIZED_HST=FStar_HyperStack FStar_HST Hacl_Cast Hacl_SBuffer
+REALIZED_HST=FStar_HyperStack FStar_HST Hacl_Cast Hacl_SBuffer Hacl_Utils
 REALIZED_MODULE_HST=$(subst _,., $(REALIZED_HST))
 REALIZED_ML_HST=$(addsuffix .mli,$(REALIZED_MLI_HST)) $(addsuffix .ml,$(REALIZED_MLI_HST) $(REALIZED_HST))
 NO_CODEGEN_HST=$(addprefix --no_extract , $(REALIZED_MODULE_HST))
@@ -44,6 +44,10 @@ sha256-ml:
 	$(OCAMLOPT) -I $(LIB_DIR_HST)/ml -I $(SHA2_ODIR) $(addprefix $(LIB_DIR_HST)/ml/,$(REALIZED_ML_HST)) \
 	  $(addprefix $(SHA2_ODIR)/,$(SHA2_EXTRACTED_HST)) ml/test_sha256.ml -o test_sha256.exe
 	./test_sha256.exe
+
+sha256-pretty:
+	cp sha256/Hash_Sha256.ml sha256/X.ml
+	camlp4 pa_o.cmo pr_o.cmo sha256/X.ml > sha256/Hash_Sha256.ml
 
 sha256-compile:
 	$(OCAMLOPT) -I $(LIB_DIR_HST)/ml -I $(SHA2_ODIR) $(addprefix $(LIB_DIR_HST)/ml/,$(REALIZED_ML_HST)) \
