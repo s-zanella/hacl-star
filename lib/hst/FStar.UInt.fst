@@ -141,13 +141,13 @@ let lte #n (a:uint_t n) (b:uint_t n) : Tot bool = (a <= b)
 
 (* JK: bitwise logic should be expressed usint a separate bitvector type   *)
 
-(** This is not a complete bitvector type, there exist only several basic    **)
-(** functions which are used to prove the assumed lemmas.                    **)
-(** (nth' a i) returns a 1-bit integer indicating the i-th bit of a.        **)
-(** (nth a i) returns a boolean indicating the i-th bit of a.                **)
-(** (rest a i) returns a (n-1)-bit integer made of the last (n-1) bits of a. **)
-(** A complete bitvector type should contain more functions like "sub",      **)
-(** whose proof will be similar with the one of "rest" but more complicated. **)
+(* * This is not a complete bitvector type, there exist only several basic    **)
+(* * functions which are used to prove the assumed lemmas.                    **)
+(* * (nth' a i) returns a 1-bit integer indicating the i-th bit of a.        **)
+(* * (nth a i) returns a boolean indicating the i-th bit of a.                **)
+(* * (rest a i) returns a (n-1)-bit integer made of the last (n-1) bits of a. **)
+(* * A complete bitvector type should contain more functions like "sub",      **)
+(* * whose proof will be similar with the one of "rest" but more complicated. **)
 private let nth' #n (a:uint_t n) (i:int) : Tot (uint_t 1) = 
   if i < 0 then 0 else (a / pow2 i) % pow2 1
 private let rest (#n:pos) (a:uint_t n) : Tot (uint_t (n - 1)) = a % pow2 (n - 1)

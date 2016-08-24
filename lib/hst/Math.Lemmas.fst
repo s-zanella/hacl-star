@@ -3,8 +3,8 @@ module Math.Lemmas
 open FStar.Mul
 open Math.Axioms
 
-(* Old Lemmas *)
-(* Lemma: definition of the euclidean division for nats *)
+(* * Old Lemmas **)
+(* * Lemma: definition of the euclidean division for nats **)
 val euclidean_div_axiom:
   a:nat -> b:pos ->
   Lemma
@@ -217,10 +217,10 @@ let non_zero_nat_is_pos_2 n = ()
 val nat_plus_nat_is_nat: n:nat -> m:nat -> Lemma (n+m>=0)
 let nat_plus_nat_is_nat n m = ()
 
-(** Lemmas about multiplication, division and modulo. **)
-(** This part focuses on the situation where          **)
-(** dividend: nat    divisor: pos                     **)
-(** TODO: add triggers for certain lemmas.            **)
+(* * Lemmas about multiplication, division and modulo. **)
+(* * This part focuses on the situation where          **)
+(* * dividend: nat    divisor: pos                     **)
+(* * TODO: add triggers for certain lemmas.            **)
 
 (* Lemma: Definition of euclidean division *)
 val euclidean_division_definition: a:nat -> b:pos ->

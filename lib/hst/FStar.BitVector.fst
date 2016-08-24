@@ -193,7 +193,6 @@ let rec from_vec_propriety #n a s =
 val append_lemma: #n:pos -> #m:pos -> a:bv_t n -> b:bv_t m ->
   Lemma (requires True)
         (ensures from_vec #(n + m) (append a b) = (from_vec #n a) + (from_vec #m b) * (pow2 n))
-	[SMTPat (from_vec #(n + m) (append a b))]
 let append_lemma #n #m a b =
   assert(equal a (slice (append a b) 0 n));
   assert(equal b (slice (append a b) n (n + m)));
@@ -202,7 +201,6 @@ let append_lemma #n #m a b =
 val slice_left_lemma: #n:pos -> a:bv_t n -> s:pos{s < n} ->
   Lemma (requires True)
         (ensures from_vec #s (slice a 0 s) = (from_vec #n a) % (pow2 s))
-	[SMTPat (from_vec #s (slice a 0 s))]
 let slice_left_lemma #n a s =
   from_vec_propriety #n a s;
   modulo_addition_lemma (from_vec #s (slice a 0 s)) (pow2 s) (from_vec #(n - s) (slice a s n));
@@ -211,7 +209,6 @@ let slice_left_lemma #n a s =
 val slice_right_lemma: #n:pos -> a:bv_t n -> s:pos{s < n} ->
   Lemma (requires True)
         (ensures from_vec #s (slice a (n - s) n) = (from_vec #n a) / (pow2 (n - s)))
-	[SMTPat (from_vec #s (slice a (n - s) n))]
 let slice_right_lemma #n a s =
   from_vec_propriety #n a (n - s);
   division_addition_lemma (from_vec #(n - s) (slice a 0 (n - s))) (pow2 (n - s)) (from_vec #s (slice a (n - s) n));
@@ -492,7 +489,6 @@ val shift_left_value_aux_3: #n:pos -> a:uint_t n -> s:pos{s < n} ->
         (ensures shift_left #n a s = (a * pow2 s) % pow2 n)
 let shift_left_value_aux_3 #n a s = 
   append_lemma #s #(n - s) (zero_vec #s) (slice (to_vec a) 0 (n - s));
-  pos_is_nat (n - s);
   slice_left_lemma #n (to_vec a) (n - s);
   pow2_multiplication_modulo_lemma_2 a n s
 
@@ -522,11 +518,8 @@ val shift_right_value_aux_3: #n:pos -> a:uint_t n -> s:pos{s < n} ->
         (ensures shift_right #n a s = a / pow2 s)
 let shift_right_value_aux_3 #n a s = 
   append_lemma #(n - s) #s (slice (to_vec a) s n) (zero_vec #s);
-  assert(shift_right #n a s = from_vec #(n - s) (slice (to_vec a) s n) + (from_vec #s (zero_vec #s) * pow2 (n - s)));
-  assert(from_vec #s (zero_vec #s) = 0);
   zero_mul (pow2 (n - s));
-  slice_right_lemma #n (to_vec a) (n - s);
-  assert(shift_right #n a s = a / pow2 s)
+  slice_right_lemma #n (to_vec a) (n - s)
 
 val shift_right_value_lemma: #n:pos -> a:uint_t n -> s:nat ->
   Lemma (requires True)
