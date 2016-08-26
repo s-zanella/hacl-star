@@ -115,12 +115,12 @@ open Math.Lemmas
 val to_vec: #n:nat -> num:uint_t n -> Tot (bv_t n)
 let rec to_vec #n num =
   if n = 0 then createEmpty #bool
-  else append (create 1 (num % 2 = 1)) (to_vec #(n - 1) (num / 2))
+  else append (to_vec #(n - 1) (num / 2)) (create 1 (num % 2 = 1))
 
 val from_vec: #n:nat -> vec:bv_t n -> Tot (uint_t n)
 let rec from_vec #n vec =
   if n = 0 then 0
-  else 2 * from_vec #(n - 1) (slice vec 1 n) + (if index vec 0 then 1 else 0)
+  else 2 * from_vec #(n - 1) (slice vec 0 (n - 1)) + (if index vec (n - 1) then 1 else 0)
 
 val to_vec_lemma_1: #n:nat -> a:uint_t n -> b:uint_t n ->
   Lemma (requires a = b) (ensures equal (to_vec a) (to_vec b))
@@ -130,11 +130,11 @@ val to_vec_lemma_2: #n:nat -> a:uint_t n -> b:uint_t n ->
   Lemma (requires equal (to_vec a) (to_vec b)) (ensures a = b)
 let rec to_vec_lemma_2 #n a b =
   if n = 0 then () else begin
-    assert(equal (slice (to_vec b) 1 n) (to_vec #(n - 1) (b / 2)));
-    assert(equal (slice (to_vec a) 1 n) (to_vec #(n - 1) (a / 2)));
+    assert(equal (slice (to_vec b) 0 (n - 1)) (to_vec #(n - 1) (b / 2)));
+    assert(equal (slice (to_vec a) 0 (n - 1)) (to_vec #(n - 1) (a / 2)));
     to_vec_lemma_2 #(n - 1) (a / 2) (b / 2);
-    assert(a % 2 = (if index (to_vec a) 0 then 1 else 0));
-    assert(b % 2 = (if index (to_vec b) 0 then 1 else 0));
+    assert(a % 2 = (if index (to_vec a) (n - 1) then 1 else 0));
+    assert(b % 2 = (if index (to_vec b) (n - 1) then 1 else 0));
     assert(a % 2 = b % 2)
   end
 
@@ -142,7 +142,7 @@ val inverse_aux: #n:nat -> vec:bv_t n -> i:nat{i < n} ->
   Lemma (requires True) (ensures index vec i = index (to_vec (from_vec vec)) i)
         [SMTPat (index (to_vec (from_vec vec)) i)]
 let rec inverse_aux #n vec i = 
-  if i = 0 then () else inverse_aux #(n - 1) (slice vec 1 n) (i - 1)
+  if i = n - 1 then assert((from_vec vec) % 2 = (if index vec (n - 1) then 1 else 0)) else inverse_aux #(n - 1) (slice vec 0 (n - 1)) i
 
 val inverse_vec_lemma: #n:nat -> vec:bv_t n ->
   Lemma (requires True) (ensures equal vec (to_vec (from_vec vec)))
@@ -163,12 +163,13 @@ val from_vec_lemma_2: #n:nat -> a:bv_t n -> b:bv_t n ->
 let from_vec_lemma_2 #n a b = inverse_vec_lemma a; inverse_vec_lemma b
 
 
+#set-options "--z3timeout 20"
 val from_vec_aux: #n:pos -> a:bv_t n -> s1:pos{s1 < n} -> s2:pos{s2 < s1} ->
   Lemma (requires True)
-        (ensures from_vec #s2 (slice a 0 s2) + (from_vec #(s1 - s2) (slice a s2 s1)) * pow2 s2 + (from_vec #(n - s1) (slice a s1 n)) * pow2 s1 = from_vec #s2 (slice a 0 s2) + (from_vec #(s1 - s2) (slice a s2 s1) + (from_vec #(n - s1) (slice a s1 n)) * pow2 (s1 - s2)) * pow2 s2)
+        (ensures (from_vec #s2 (slice a 0 s2)) * pow2 (n - s2) + (from_vec #(s1 - s2) (slice a s2 s1)) * pow2 (n - s1) + (from_vec #(n - s1) (slice a s1 n)) = ((from_vec #s2 (slice a 0 s2)) * pow2 (s1 - s2) + (from_vec #(s1 - s2) (slice a s2 s1))) * pow2 (n - s1) + (from_vec #(n - s1) (slice a s1 n)))
 let from_vec_aux #n a s1 s2 =
-  commutativity_mul (from_vec #(n - s1) (slice a s1 n)) (pow2 (s1 - s2)) (pow2 s2);
-  pow2_exp_1 (s1 - s2) s2
+  commutativity_mul (from_vec #s2 (slice a 0 s2)) (pow2 (s1 - s2)) (pow2 (n - s1));
+  pow2_exp_1 (s1 - s2) (n - s1)
 
 val seq_slice_lemma: #n:pos -> a:bv_t n -> s1:nat{s1 < n} -> t1:nat{t1 >= s1 && t1 <= n} -> s2:nat{s2 < t1 - s1} -> t2:nat{t2 >= s2 && t2 <= t1 - s1} ->
   Lemma (equal (slice (slice a s1 t1) s2 t2) (slice a (s1 + s2) (s1 + t2)))
@@ -176,23 +177,25 @@ let seq_slice_lemma #n a s1 t1 s2 t2 = ()
 
 val from_vec_propriety: #n:pos -> a:bv_t n -> s:pos{s < n} ->
   Lemma (requires True)
-        (ensures from_vec a = from_vec #s (slice a 0 s) + (from_vec #(n - s) (slice a s n)) * pow2 s)
+        (ensures from_vec a = (from_vec #s (slice a 0 s)) * pow2 (n - s) + from_vec #(n - s) (slice a s n))
+	(decreases (n - s))
 let rec from_vec_propriety #n a s =
-  if s = 1 then () else begin
-    from_vec_propriety #n a (s - 1);
-    from_vec_propriety #s (slice a 0 s) (s - 1);
-    from_vec_propriety #(n - s + 1) (slice a (s - 1) n) (n - s);
-    seq_slice_lemma #n a 0 s 0 (s - 1);
-    seq_slice_lemma #n a 0 s (s - 1) s;
-    seq_slice_lemma #n a (s - 1) n 0 1;
-    seq_slice_lemma #n a (s - 1) n 1 (n - s + 1);
-    from_vec_aux #n a s (s - 1)
+  if s = n - 1 then () else begin
+    from_vec_propriety #n a (s + 1);
+    from_vec_propriety #(s + 1) (slice a 0 (s + 1)) s;
+    seq_slice_lemma #n a 0 (s + 1) 0 s;
+    seq_slice_lemma #n a 0 (s + 1) s (s + 1);
+    from_vec_aux #n a (s + 1) s;
+    from_vec_propriety #(n - s) (slice a s n) 1;
+    seq_slice_lemma #n a s n 0 1;
+    seq_slice_lemma #n a s n 1 (n - s)
   end
+#reset-options
 
 
 val append_lemma: #n:pos -> #m:pos -> a:bv_t n -> b:bv_t m ->
   Lemma (requires True)
-        (ensures from_vec #(n + m) (append a b) = (from_vec #n a) + (from_vec #m b) * (pow2 n))
+        (ensures from_vec #(n + m) (append a b) = (from_vec #n a) * pow2 m + (from_vec #m b))
 let append_lemma #n #m a b =
   assert(equal a (slice (append a b) 0 n));
   assert(equal b (slice (append a b) n (n + m)));
@@ -200,20 +203,19 @@ let append_lemma #n #m a b =
 
 val slice_left_lemma: #n:pos -> a:bv_t n -> s:pos{s < n} ->
   Lemma (requires True)
-        (ensures from_vec #s (slice a 0 s) = (from_vec #n a) % (pow2 s))
+        (ensures from_vec #s (slice a 0 s) = (from_vec #n a) / (pow2 (n - s)))
 let slice_left_lemma #n a s =
   from_vec_propriety #n a s;
-  modulo_addition_lemma (from_vec #s (slice a 0 s)) (pow2 s) (from_vec #(n - s) (slice a s n));
-  small_modulo_lemma_1 (from_vec #s (slice a 0 s)) (pow2 s)
+  division_addition_lemma (from_vec #(n - s) (slice a s n)) (pow2 (n - s)) (from_vec #s (slice a 0 s));
+  small_division_lemma_1 (from_vec #(n - s) (slice a s n)) (pow2 (n - s))
 
 val slice_right_lemma: #n:pos -> a:bv_t n -> s:pos{s < n} ->
   Lemma (requires True)
-        (ensures from_vec #s (slice a (n - s) n) = (from_vec #n a) / (pow2 (n - s)))
+        (ensures from_vec #s (slice a (n - s) n) = (from_vec #n a) % (pow2 s))
 let slice_right_lemma #n a s =
   from_vec_propriety #n a (n - s);
-  division_addition_lemma (from_vec #(n - s) (slice a 0 (n - s))) (pow2 (n - s)) (from_vec #s (slice a (n - s) n));
-  small_division_lemma_1 (from_vec #(n - s) (slice a 0 (n - s))) (pow2 (n - s));
-  multiple_division_lemma (from_vec #s (slice a (n - s) n)) (pow2 (n - s))
+  modulo_addition_lemma (from_vec #s (slice a (n - s) n)) (pow2 s) (from_vec #(n - s) (slice a 0 (n - s)));
+  small_modulo_lemma_1 (from_vec #s (slice a (n - s) n)) (pow2 s)
 
 
 (* Relations between constants in BitVector and in UInt. *)
@@ -221,7 +223,7 @@ val zero_to_vec_lemma: #n:pos -> i:nat{i < n} ->
   Lemma (requires True) (ensures index (to_vec (zero #n)) i = index (zero_vec #n) i)
         [SMTPat (index (to_vec (zero #n)) i)]
 let rec zero_to_vec_lemma #n i =
-  if i = 0 then () else zero_to_vec_lemma #(n - 1) (i - 1)
+  if i = n - 1 then () else zero_to_vec_lemma #(n - 1) i
 
 val zero_from_vec_lemma: #n:pos ->
   Lemma (requires True) (ensures from_vec (zero_vec #n) = zero #n)
@@ -230,34 +232,34 @@ let zero_from_vec_lemma #n = to_vec_lemma_2 (from_vec (zero_vec #n)) (zero #n)
 
 val one_to_vec_lemma: #n:pos -> i:nat{i < n} ->
   Lemma (requires True)
-        (ensures index (to_vec (one #n)) i = index (elem_vec #n 0) i)
+        (ensures index (to_vec (one #n)) i = index (elem_vec #n (n - 1)) i)
 	[SMTPat (index (to_vec (one #n)) i)]
 let one_to_vec_lemma #n i =
-  if i = 0 then () else zero_to_vec_lemma #n i
+  if i = n - 1 then () else zero_to_vec_lemma #n i
 
 val pow2_to_vec_lemma: #n:pos -> p:nat{p < n} -> i:nat{i < n} ->
   Lemma (requires True)
-        (ensures index (to_vec (pow2_n #n p)) i = index (elem_vec #n p) i)
+        (ensures index (to_vec (pow2_n #n p)) i = index (elem_vec #n (n - p - 1)) i)
 	[SMTPat (index (to_vec (pow2_n #n p)) i)]
 let rec pow2_to_vec_lemma #n p i =
-  if i = 0 then () 
+  if i = n - 1 then () 
   else if p = 0 then one_to_vec_lemma #n i
-  else pow2_to_vec_lemma #(n - 1) (p - 1) (i - 1)
+  else pow2_to_vec_lemma #(n - 1) (p - 1) i
 
 val pow2_from_vec_lemma: #n:pos -> p:nat{p < n} ->
-  Lemma (requires True) (ensures from_vec (elem_vec #n p) = pow2_n #n p)
+  Lemma (requires True) (ensures from_vec (elem_vec #n p) = pow2_n #n (n - p - 1))
         [SMTPat (from_vec (elem_vec #n p))]
-let pow2_from_vec_lemma #n p = to_vec_lemma_2 (from_vec (elem_vec #n p)) (pow2_n #n p)
+let pow2_from_vec_lemma #n p = to_vec_lemma_2 (from_vec (elem_vec #n p)) (pow2_n #n (n - p - 1))
 
 val ones_to_vec_lemma: #n:pos -> i:nat{i < n} ->
   Lemma (requires True)
         (ensures index (to_vec (ones #n)) i = index (ones_vec #n) i)
 	[SMTPat (index (to_vec (ones #n)) i)]
 let rec ones_to_vec_lemma #n i =
-  if i = 0 then () else begin 
+  if i = n - 1 then () else begin 
      pow2_exp_1 i (n - i);
      division_definition (pow2 n - 1) (pow2 i) (pow2 (n - i) - 1);
-     ones_to_vec_lemma #(n - 1) (i - 1)
+     ones_to_vec_lemma #(n - 1) i
   end
 
 val ones_from_vec_lemma: #n:pos ->
@@ -285,15 +287,15 @@ let rec zero_nth_lemma #n i = ()
 
 val pow2_nth_lemma: #n:pos -> p:nat{p < n} -> i:nat{i < n} ->
   Lemma (requires True)
-        (ensures (i = p ==> nth (pow2_n #n p) i = true) /\
-	         (i > p ==> nth (pow2_n #n p) i = false))
+        (ensures (i = n - p - 1 ==> nth (pow2_n #n p) i = true) /\
+	         (i <> n - p - 1 ==> nth (pow2_n #n p) i = false))
         [SMTPat (nth (pow2_n #n p) i)]
 let pow2_nth_lemma #n p i = ()
 
 val one_nth_lemma: #n:pos -> i:nat{i < n} ->
   Lemma (requires True)
-        (ensures (i = 0 ==> nth (one #n) i = true) /\
-	         (i > 0 ==> nth (one #n) i = false))
+        (ensures (i = n - 1 ==> nth (one #n) i = true) /\
+	         (i < n - 1 ==> nth (one #n) i = false))
         [SMTPat (nth (one #n) i)]
 let one_nth_lemma #n i = ()
 
@@ -413,29 +415,29 @@ let lognot_lemma_1 #n = nth_lemma (lognot #n (zero #n)) (ones #n)
 
 (* Shift operators *)
 val shift_left: #n:pos -> a:uint_t n -> s:nat -> Tot (uint_t n)
-let shift_left #n a s = from_vec (shift_right_vec #n (to_vec #n a) s)
+let shift_left #n a s = from_vec (shift_left_vec #n (to_vec #n a) s)
 val shift_right: #n:pos -> a:uint_t n -> s:nat -> Tot (uint_t n)
-let shift_right #n a s = from_vec (shift_left_vec #n (to_vec #n a) s)
+let shift_right #n a s = from_vec (shift_right_vec #n (to_vec #n a) s)
 
 (* Shift operators lemmas *)
-val shift_left_lemma_1: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i < s} ->
+val shift_left_lemma_1: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i >= n - s} ->
   Lemma (requires True)
 	(ensures (nth (shift_left #n a s) i = false))
 	[SMTPat (nth (shift_left #n a s) i)]
 let shift_left_lemma_1 #n a s i = ()
-val shift_left_lemma_2: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i >= s} ->
+val shift_left_lemma_2: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i < n - s} ->
   Lemma (requires True)
-        (ensures (nth (shift_left #n a s) i = nth #n a (i - s)))
+        (ensures (nth (shift_left #n a s) i = nth #n a (i + s)))
 	[SMTPat (nth (shift_left #n a s) i)]
 let shift_left_lemma_2 #n a s i = ()
-val shift_right_lemma_1: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i >= n - s} ->
+val shift_right_lemma_1: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i < s} ->
   Lemma (requires True)
 	(ensures (nth (shift_right #n a s) i = false))
 	[SMTPat (nth (shift_right #n a s) i)]
 let shift_right_lemma_1 #n a s i = ()
-val shift_right_lemma_2: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i < n - s} ->
+val shift_right_lemma_2: #n:pos -> a:uint_t n -> s:nat -> i:nat{i < n && i >= s} ->
   Lemma (requires True)
-        (ensures (nth (shift_right #n a s) i = nth #n a (i + s)))
+        (ensures (nth (shift_right #n a s) i = nth #n a (i - s)))
 	[SMTPat (nth (shift_right #n a s) i)]
 let shift_right_lemma_2 #n a s i = ()
 
@@ -488,8 +490,8 @@ val shift_left_value_aux_3: #n:pos -> a:uint_t n -> s:pos{s < n} ->
   Lemma (requires True)
         (ensures shift_left #n a s = (a * pow2 s) % pow2 n)
 let shift_left_value_aux_3 #n a s = 
-  append_lemma #s #(n - s) (zero_vec #s) (slice (to_vec a) 0 (n - s));
-  slice_left_lemma #n (to_vec a) (n - s);
+  append_lemma #(n - s) #s (slice (to_vec a) s n) (zero_vec #s);
+  slice_right_lemma #n (to_vec a) (n - s);
   pow2_multiplication_modulo_lemma_2 a n s
 
 val shift_left_value_lemma: #n:pos -> a:uint_t n -> s:nat ->
@@ -517,9 +519,9 @@ val shift_right_value_aux_3: #n:pos -> a:uint_t n -> s:pos{s < n} ->
   Lemma (requires True)
         (ensures shift_right #n a s = a / pow2 s)
 let shift_right_value_aux_3 #n a s = 
-  append_lemma #(n - s) #s (slice (to_vec a) s n) (zero_vec #s);
+  append_lemma #s #(n - s) (zero_vec #s) (slice (to_vec a) 0 (n - s));
   zero_mul (pow2 (n - s));
-  slice_right_lemma #n (to_vec a) (n - s)
+  slice_left_lemma #n (to_vec a) (n - s)
 
 val shift_right_value_lemma: #n:pos -> a:uint_t n -> s:nat ->
   Lemma (requires True)
