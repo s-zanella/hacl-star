@@ -445,21 +445,21 @@ let montgomery_ladder res n q =
   admit(); // TODO
   // Build 'storage' empty but 'live' points
   let two_p_x = create (Hacl.Cast.uint64_to_sint64 0uL) (nlength+|1ul) in
-  let two_p_y = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
+  let two_p_y = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
   let two_p_z = create (Hacl.Cast.uint64_to_sint64 0uL) (nlength+|1ul) in
   let two_p =  make two_p_x two_p_y two_p_z in
   cut(distinct two_p q);
   let two_p_plus_q_x = create (Hacl.Cast.uint64_to_sint64 0uL) (nlength+|1ul) in
-  let two_p_plus_q_y = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
+  let two_p_plus_q_y = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
   let two_p_plus_q_z = create (Hacl.Cast.uint64_to_sint64 0uL) (nlength+|1ul) in
   let two_p_plus_q = make two_p_plus_q_x two_p_plus_q_y two_p_plus_q_z in
   cut(distinct two_p_plus_q two_p /\ distinct two_p_plus_q q);
   // Copy of the 'q' point
-  let p_x = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  blit (get_x q) 0ul p_x 0ul nlength;
-  let p_y = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  blit (get_y q) 0ul p_y 0ul nlength;
-  let p_z = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
+  let p_x = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  blit (get_x q) 0ul p_x 0ul 5ul;
+  let p_y = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  blit (get_y q) 0ul p_y 0ul 5ul;
+  let p_z = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
   blit (get_z q) 0ul p_z 0ul nlength;
   let p = make p_x p_y p_z in
   // Point at infinity

@@ -11,21 +11,21 @@ assume MaxUInt32: pow2 32 = 4294967296
 assume MaxUInt64: pow2 64 > 0xfffffffffffffff
 assume MaxUInt128: pow2 128 > pow2 64
 
-val prime: erased pos
-let prime = hide (pow2 255 - 19)
-let platform_size: pos = 64
-let platform_wide: pos = 128
-let norm_length: pos = 5
-let nlength: x:UInt32.t{UInt32.v x = 5} = 5ul
-let bytes_length: pos = 32
-let blength: x:UInt32.t{UInt32.v x = 32} = 32ul
-let templ: (nat -> Tot pos) = fun i -> 51
-let a24' = 121665
-let a24 = 121665uL
+inline val prime: erased pos
+inline let prime = hide (pow2 255 - 19)
+inline let platform_size: pos = 64
+inline let platform_wide: pos = 128
+inline let norm_length: pos = 5
+inline let nlength: x:UInt32.t{UInt32.v x = 5} = 5ul
+inline let bytes_length: pos = 32
+inline let blength: x:UInt32.t{UInt32.v x = 32} = 32ul
+inline let templ: (nat -> Tot pos) = fun i -> 51
+inline let a24' = 121665
+inline let a24 = 121665uL
 
 (* Required at least for addition *)
-val parameters_lemma_0: unit -> Lemma (forall (i:nat). i < 2*norm_length - 1 ==> templ i < platform_size)
-let parameters_lemma_0 () = ()
+inline val parameters_lemma_0: unit -> Lemma (forall (i:nat). i < 2*norm_length - 1 ==> templ i < platform_size)
+inline let parameters_lemma_0 () = ()
 
-val parameters_lemma_1: unit -> Lemma (platform_wide - 1 >= log_2 norm_length)
-let parameters_lemma_1 () = ()
+inline val parameters_lemma_1: unit -> Lemma (platform_wide - 1 >= log_2 norm_length)
+inline let parameters_lemma_1 () = ()

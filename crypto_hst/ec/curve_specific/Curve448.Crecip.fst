@@ -20,9 +20,9 @@ let rec loop tmp v ctr =
 val crecip':
   output:bigint -> z:bigint -> ST unit (requires (fun h -> True)) (ensures (fun h0 _ h1 -> True))
 let crecip' output z = 
-  let t0 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let t1 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let t2 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
+  let t0 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let t1 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let t2 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
 
   fsquare t1 z;  (* 2 *)
   fmul t2 z t1;  (* 3 *)

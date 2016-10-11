@@ -23,15 +23,15 @@ let assign output input = blit input 0ul output 0ul nlength
 val crecip':
   output:bigint -> z:bigint -> ST unit (requires (fun h -> True)) (ensures (fun h0 _ h1 -> True))
 let crecip' output input = 
-  let ftmp = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let ftmp2 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let e2 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let e4 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let e8 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let e16 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let e32 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let e64 = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let tmp = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
+  let ftmp = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let ftmp2 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let e2 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let e4 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let e8 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let e16 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let e32 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let e64 = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let tmp = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
     
   fsquare ftmp input;  (* 2^1 *)
   fmul ftmp input ftmp; (* 2^2 - 2^0 *)

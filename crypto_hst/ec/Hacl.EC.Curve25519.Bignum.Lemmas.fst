@@ -290,7 +290,7 @@ let fdifference a b =
   admit(); // TODO
   let h0 = HST.get() in
   (* standardized_eq_norm h0 a; standardized_eq_norm h0 b; *)
-  let b' = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
+  let b' = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
   blit b 0ul b' 0ul nlength;
   (* let b' = Bigint.copy b in  *)
   let h1 = HST.get() in

@@ -72,8 +72,8 @@ let double_and_add' two_p two_p_plus_q p p_plus_q q =
   let x = get_x p in let z = get_z p in 
   let xprime = get_x p_plus_q in let zprime = get_z p_plus_q in
   let x2 = get_x two_p in let z2 = get_z two_p in
-  let origx = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
-  let origxprime = create (Hacl.Cast.uint64_to_sint64 0uL) nlength in
+  let origx = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
+  let origxprime = create (Hacl.Cast.uint64_to_sint64 0uL) 5ul in
   let zzz = create (Hacl.Cast.uint64_to_sint64 0uL) (U32.mul 2ul nlength -| 1ul) in
   let xx = create (Hacl.Cast.uint64_to_sint64 0uL) (U32.mul 2ul nlength -| 1ul) in
   let zz = create (Hacl.Cast.uint64_to_sint64 0uL) (U32.mul 2ul nlength -| 1ul) in

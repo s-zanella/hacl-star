@@ -524,7 +524,8 @@ let double_and_add two_p two_p_plus_q p p_plus_q q =
   let open FStar.UInt32 in
   let nl = nlength in
   let nl2 = U32 (2ul *^ nlength -^ 1ul) in
-  let tmp = create (Hacl.Cast.uint64_to_sint64 0uL) (nl +^ nl +^ nl2 +^ nl2 +^ nl2  +^ nl2  +^ nl2  +^ nl2  +^ nl2) in
+  // let tmp = create (Hacl.Cast.uint64_to_sint64 0uL) (nl +^ nl +^ nl2 +^ nl2 +^ nl2  +^ nl2  +^ nl2  +^ nl2  +^ nl2) in
+  let tmp = create (Hacl.Cast.uint64_to_sint64 0uL) 73ul in
   let h1 = HST.get() in
   lemma_reveal_modifies_0 h0 h1;
 
